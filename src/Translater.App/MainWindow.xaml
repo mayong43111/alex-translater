@@ -14,49 +14,148 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
+            <RowDefinition Height="32" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TitleBar
-            x:Name="AppTitleBar"
-            Title="Translater"
-            BackRequested="TitleBar_BackRequested"
-            IsBackButtonVisible="{x:Bind NavFrame.CanGoBack, Mode=OneWay}"
-            IsPaneToggleButtonVisible="True"
-            PaneToggleRequested="TitleBar_PaneToggleRequested">
-            <TitleBar.IconSource>
-                <ImageIconSource ImageSource="Assets/AppIcon.ico" />
-            </TitleBar.IconSource>
-        </TitleBar>
+        <!-- Compact title bar -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Padding="12,0">
+            <TextBlock
+                VerticalAlignment="Center"
+                FontSize="12"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="Translater" />
+        </Grid>
 
-        <NavigationView
-            x:Name="NavView"
-            Grid.Row="1"
-            IsBackButtonVisible="Collapsed"
-            IsPaneToggleButtonVisible="False"
-            SelectionChanged="NavView_SelectionChanged">
-            <NavigationView.MenuItems>
-                <NavigationViewItem
-                    Content="翻译"
-                    IsSelected="True"
-                    Tag="translate">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8C1;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="截屏翻译" Tag="screenshot">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7A0;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="历史记录" Tag="history">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE81C;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-            </NavigationView.MenuItems>
-            <Frame x:Name="NavFrame" />
-        </NavigationView>
+        <!-- Main content - compact translator -->
+        <Grid Grid.Row="1" Padding="12,0,12,12" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Language bar -->
+            <Grid Grid.Row="0" Height="32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ComboBox
+                    x:Name="SourceLanguageCombo"
+                    Grid.Column="0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    SelectedIndex="0">
+                    <ComboBoxItem Content="自动检测" Tag="auto" />
+                    <ComboBoxItem Content="中文" Tag="zh" />
+                    <ComboBoxItem Content="English" Tag="en" />
+                </ComboBox>
+                <Button
+                    x:Name="SwapButton"
+                    Grid.Column="1"
+                    Width="32"
+                    Height="32"
+                    Margin="4,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="SwapLanguage_Click">
+                    <SymbolIcon Symbol="Switch" />
+                </Button>
+                <ComboBox
+                    x:Name="TargetLanguageCombo"
+                    Grid.Column="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    SelectedIndex="1">
+                    <ComboBoxItem Content="中文" Tag="zh" />
+                    <ComboBoxItem Content="English" Tag="en" />
+                </ComboBox>
+                <Button
+                    Grid.Column="3"
+                    Width="32"
+                    Height="32"
+                    Margin="4,0,0,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="ScreenshotTranslate_Click"
+                    ToolTipService.ToolTip="截屏翻译 (Alt+D)">
+                    <SymbolIcon Symbol="Crop" />
+                </Button>
+            </Grid>
+
+            <!-- Input area -->
+            <Grid Grid.Row="1">
+                <TextBox
+                    x:Name="InputTextBox"
+                    AcceptsReturn="True"
+                    FontSize="14"
+                    PlaceholderText="输入文本..."
+                    TextWrapping="Wrap" />
+                <!-- Translate button overlay bottom-right -->
+                <StackPanel
+                    Margin="0,0,6,6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Orientation="Horizontal"
+                    Spacing="4">
+                    <Button
+                        Width="28"
+                        Height="28"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Click="PasteFromClipboard_Click"
+                        ToolTipService.ToolTip="粘贴">
+                        <SymbolIcon Symbol="Paste" />
+                    </Button>
+                    <Button
+                        x:Name="TranslateButton"
+                        Height="28"
+                        Padding="10,0"
+                        Click="Translate_Click"
+                        CornerRadius="14"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <TextBlock FontSize="12" Text="翻译" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Divider -->
+            <Border
+                Grid.Row="2"
+                Height="1"
+                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+            <!-- Result area -->
+            <Grid Grid.Row="3">
+                <TextBox
+                    x:Name="ResultTextBox"
+                    FontSize="14"
+                    IsReadOnly="True"
+                    PlaceholderText="翻译结果"
+                    TextWrapping="Wrap" />
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="0,0,6,6"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="CopyResult_Click"
+                    ToolTipService.ToolTip="复制">
+                    <SymbolIcon Symbol="Copy" />
+                </Button>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
