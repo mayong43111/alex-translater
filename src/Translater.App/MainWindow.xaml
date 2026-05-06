@@ -23,6 +23,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock
                 VerticalAlignment="Center"
@@ -31,6 +32,18 @@
                 Text="Translater" />
             <Button
                 Grid.Column="1"
+                Width="28"
+                Height="28"
+                Padding="0"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="History_Click"
+                ToolTipService.ToolTip="历史记录">
+                <SymbolIcon Symbol="Clock" />
+            </Button>
+            <Button
+                Grid.Column="2"
                 Width="28"
                 Height="28"
                 Padding="0"

@@ -2,6 +2,13 @@ using System.Text.Json;
 
 namespace Translater_App.Helpers;
 
+public enum AppTheme
+{
+    System = 0,
+    Light = 1,
+    Dark = 2
+}
+
 public class AppSettings
 {
     private static readonly string SettingsDir = Path.Combine(
@@ -11,6 +18,7 @@ public class AppSettings
 
     public uint HotkeyModifiers { get; set; } = HotKeyManager.MOD_ALT;
     public uint HotkeyKey { get; set; } = 0x44; // VK_D
+    public AppTheme Theme { get; set; } = AppTheme.System;
 
     public static AppSettings Load()
     {

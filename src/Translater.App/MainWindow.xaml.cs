@@ -5,9 +5,11 @@ using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Translater.Core.Interfaces;
+using Translater.Core.Models;
 using Translater.Core.Services;
 using Translater.Infrastructure.Translators;
 using Translater.Infrastructure.Ocr;
+using Translater.Infrastructure.Storage;
 using Translater_App.Helpers;
 using WinRT.Interop;
 using System.Runtime.InteropServices;
@@ -18,6 +20,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly ITranslationService _translator;
     private readonly IOcrService _ocrService;
+    private readonly IHistoryService _historyService;
     private HotKeyManager? _hotKeyManager;
     private TrayIconManager? _trayIcon;
     private AppSettings _settings;
@@ -55,10 +58,25 @@ public sealed partial class MainWindow : Window
         _ocrService = new PaddleOcrEngine();
         _settings = AppSettings.Load();
 
+        var storageDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Translater");
+        _historyService = new JsonHistoryStore(storageDir);
+
         // Register hotkey and tray icon
         var hwnd = WindowNative.GetWindowHandle(this);
         RegisterGlobalHotKey(hwnd);
         SetupTrayIcon(hwnd);
+
+        // Apply saved theme
+        if (this.Content is FrameworkElement rootElement)
+        {
+            rootElement.RequestedTheme = _settings.Theme switch
+            {
+                AppTheme.Light => ElementTheme.Light,
+                AppTheme.Dark => ElementTheme.Dark,
+                _ => ElementTheme.Default
+            };
+        }
 
         // Intercept close to minimize to tray
         AppWindow.Closing += AppWindow_Closing;
@@ -203,6 +221,16 @@ public sealed partial class MainWindow : Window
 
             var result = await _translator.TranslateAsync(ocrResult.Text, "auto", targetLang);
             ResultTextBox.Text = result.TranslatedText;
+
+            await _historyService.SaveAsync(new HistoryItem
+            {
+                OriginalText = ocrResult.Text,
+                TranslatedText = result.TranslatedText,
+                SourceLanguage = "auto",
+                TargetLanguage = targetLang,
+                TranslationSource = result.SourceName,
+                Timestamp = DateTime.Now
+            });
         }
         catch (Exception ex)
         {
@@ -231,6 +259,17 @@ public sealed partial class MainWindow : Window
 
             var result = await _translator.TranslateAsync(inputText, sourceLang, targetLang);
             ResultTextBox.Text = result.TranslatedText;
+
+            // Save to history
+            await _historyService.SaveAsync(new HistoryItem
+            {
+                OriginalText = inputText,
+                TranslatedText = result.TranslatedText,
+                SourceLanguage = sourceLang,
+                TargetLanguage = targetLang,
+                TranslationSource = result.SourceName,
+                Timestamp = DateTime.Now
+            });
         }
         catch (TaskCanceledException)
         {
@@ -300,6 +339,97 @@ public sealed partial class MainWindow : Window
         return fallback;
     }
 
+    private async void History_Click(object sender, RoutedEventArgs e)
+    {
+        var items = await _historyService.GetRecentAsync(30);
+
+        var listView = new ListView
+        {
+            MaxHeight = 350,
+            Width = 340,
+            SelectionMode = ListViewSelectionMode.None
+        };
+
+        if (items.Count == 0)
+        {
+            listView.Items.Add(new TextBlock
+            {
+                Text = "暂无历史记录",
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                Margin = new Thickness(0, 12, 0, 12)
+            });
+        }
+        else
+        {
+            foreach (var item in items)
+            {
+                var sp = new StackPanel { Spacing = 2, Padding = new Thickness(0, 4, 0, 4) };
+                sp.Children.Add(new TextBlock
+                {
+                    Text = item.OriginalText.Length > 50 ? item.OriginalText[..50] + "..." : item.OriginalText,
+                    FontSize = 13,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                });
+                sp.Children.Add(new TextBlock
+                {
+                    Text = item.TranslatedText.Length > 50 ? item.TranslatedText[..50] + "..." : item.TranslatedText,
+                    FontSize = 12,
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                });
+                sp.Children.Add(new TextBlock
+                {
+                    Text = item.Timestamp.ToString("MM-dd HH:mm"),
+                    FontSize = 11,
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]
+                });
+
+                // Tap to load into input/result
+                var historyItem = item;
+                sp.Tapped += (s, args) =>
+                {
+                    InputTextBox.Text = historyItem.OriginalText;
+                    ResultTextBox.Text = historyItem.TranslatedText;
+                };
+
+                listView.Items.Add(sp);
+            }
+        }
+
+        var panel = new StackPanel { Spacing = 8 };
+        panel.Children.Add(listView);
+
+        if (items.Count > 0)
+        {
+            var clearBtn = new Button
+            {
+                Content = "清空历史",
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            clearBtn.Click += async (s, args) =>
+            {
+                await _historyService.ClearAllAsync();
+                listView.Items.Clear();
+                listView.Items.Add(new TextBlock
+                {
+                    Text = "已清空",
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                });
+            };
+            panel.Children.Add(clearBtn);
+        }
+
+        var dialog = new ContentDialog
+        {
+            Title = "历史记录",
+            Content = panel,
+            CloseButtonText = "关闭",
+            XamlRoot = this.Content.XamlRoot
+        };
+
+        await dialog.ShowAsync();
+    }
+
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
         // Build settings dialog content
@@ -338,6 +468,16 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(new TextBlock { Text = "按键:" });
         panel.Children.Add(keyCombo);
 
+        // Theme setting
+        panel.Children.Add(new Border { Height = 1, Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"], Margin = new Thickness(0, 4, 0, 4) });
+        panel.Children.Add(new TextBlock { Text = "主题", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        var themeCombo = new ComboBox { Width = 150 };
+        themeCombo.Items.Add("跟随系统");
+        themeCombo.Items.Add("浅色");
+        themeCombo.Items.Add("深色");
+        themeCombo.SelectedIndex = (int)_settings.Theme;
+        panel.Children.Add(themeCombo);
+
         var dialog = new ContentDialog
         {
             Title = "设置",
@@ -370,7 +510,19 @@ public sealed partial class MainWindow : Window
 
             _settings.HotkeyModifiers = newMod;
             _settings.HotkeyKey = newKey;
+            _settings.Theme = (AppTheme)themeCombo.SelectedIndex;
             _settings.Save();
+
+            // Apply theme
+            if (this.Content is FrameworkElement root)
+            {
+                root.RequestedTheme = _settings.Theme switch
+                {
+                    AppTheme.Light => ElementTheme.Light,
+                    AppTheme.Dark => ElementTheme.Dark,
+                    _ => ElementTheme.Default
+                };
+            }
 
             // Re-register hotkey
             var hwnd = WindowNative.GetWindowHandle(this);
