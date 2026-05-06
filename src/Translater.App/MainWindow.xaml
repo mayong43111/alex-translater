@@ -20,11 +20,27 @@
 
         <!-- Compact title bar -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Padding="12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
             <TextBlock
                 VerticalAlignment="Center"
                 FontSize="12"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Text="Translater" />
+            <Button
+                Grid.Column="1"
+                Width="28"
+                Height="28"
+                Padding="0"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="Settings_Click"
+                ToolTipService.ToolTip="设置">
+                <SymbolIcon Symbol="Setting" />
+            </Button>
         </Grid>
 
         <!-- Main content - compact translator -->
