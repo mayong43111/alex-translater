@@ -1,11 +1,17 @@
 name: CI Build & Release
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: '是否创建 Release'
+        required: false
+        type: boolean
+        default: false
+      tag_name:
+        description: 'Release 版本号 (如 v1.0.1)'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -40,7 +46,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: inputs.create_release == true
     permissions:
       contents: write
     steps:
@@ -52,5 +58,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag_name }}
           files: Translater-win-x64.zip
           generate_release_notes: true
