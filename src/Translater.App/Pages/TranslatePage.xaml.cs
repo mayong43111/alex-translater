@@ -1,14 +1,20 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
+using Translater.Core.Interfaces;
+using Translater.Core.Services;
+using Translater.Infrastructure.Translators;
 
 namespace Translater_App.Pages;
 
 public sealed partial class TranslatePage : Page
 {
+    private readonly ITranslationService _translator;
+
     public TranslatePage()
     {
         InitializeComponent();
+        _translator = new GoogleFreeTranslator(new HttpClient());
     }
 
     private async void Translate_Click(object sender, RoutedEventArgs e)
@@ -18,10 +24,25 @@ public sealed partial class TranslatePage : Page
             return;
 
         TranslateButton.IsEnabled = false;
+        ResultTextBox.Text = "翻译中...";
         try
         {
-            // TODO: Call ITranslationService from Translater.Core
-            ResultTextBox.Text = $"[翻译服务待接入] {inputText}";
+            var sourceLang = GetSelectedSourceLanguage();
+            var targetLang = GetSelectedTargetLanguage();
+
+            // Auto-detect: determine target based on input
+            if (sourceLang == "auto")
+            {
+                var detected = LanguageDetector.Detect(inputText);
+                targetLang = LanguageDetector.GetTargetLanguage(detected);
+            }
+
+            var result = await _translator.TranslateAsync(inputText, sourceLang, targetLang);
+            ResultTextBox.Text = result.TranslatedText;
+        }
+        catch (Exception ex)
+        {
+            ResultTextBox.Text = $"翻译失败: {ex.Message}";
         }
         finally
         {
@@ -70,5 +91,19 @@ public sealed partial class TranslatePage : Page
             package.SetText(ResultTextBox.Text);
             Clipboard.SetContent(package);
         }
+    }
+
+    private string GetSelectedSourceLanguage()
+    {
+        if (SourceLanguageCombo.SelectedItem is ComboBoxItem item)
+            return item.Tag?.ToString() ?? "auto";
+        return "auto";
+    }
+
+    private string GetSelectedTargetLanguage()
+    {
+        if (TargetLanguageCombo.SelectedItem is ComboBoxItem item)
+            return item.Tag?.ToString() ?? "en";
+        return "en";
     }
 }
