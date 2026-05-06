@@ -4,6 +4,11 @@ namespace Translater_App;
 
 public partial class App : Application
 {
+    private const string SingleInstanceMutexName = "Global\\AlexTranslater_SingleInstance";
+    private const string ActivateInstanceEventName = "Global\\AlexTranslater_Activate";
+    private static System.Threading.Mutex? _singleInstanceMutex;
+    private static System.Threading.EventWaitHandle? _activateInstanceEvent;
+    private static System.Threading.CancellationTokenSource? _activationListenerCts;
     private Window? _window;
     private static readonly string CrashLogPath = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -42,7 +47,42 @@ public partial class App : Application
 
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        _singleInstanceMutex = new System.Threading.Mutex(initiallyOwned: true, name: SingleInstanceMutexName, createdNew: out var createdNew);
+        _activateInstanceEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, ActivateInstanceEventName);
+        if (!createdNew)
+        {
+            _activateInstanceEvent.Set();
+            Exit();
+            return;
+        }
+
+        StartActivationListener();
+
         _window = new MainWindow();
         _window.Activate();
+    }
+
+    private void StartActivationListener()
+    {
+        _activationListenerCts = new System.Threading.CancellationTokenSource();
+        var token = _activationListenerCts.Token;
+
+        _ = System.Threading.Tasks.Task.Run(() =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                _activateInstanceEvent?.WaitOne();
+                if (token.IsCancellationRequested)
+                    break;
+
+                _window?.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_window is MainWindow mainWindow)
+                        mainWindow.BringToFront();
+                    else
+                        _window?.Activate();
+                });
+            }
+        }, token);
     }
 }

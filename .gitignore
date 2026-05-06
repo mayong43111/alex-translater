@@ -40,7 +40,7 @@ BundleArtifacts/
 
 # Publish output
 publish/
-publish_test/
+publish_test*/
 *.pubxml
 PublishScripts/
 

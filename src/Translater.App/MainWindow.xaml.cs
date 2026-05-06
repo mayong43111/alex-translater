@@ -41,12 +41,24 @@ public sealed partial class MainWindow : Window
     private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
     private const int GWLP_WNDPROC = -4;
     private const int SW_HIDE = 0;
     private const int SW_SHOW = 5;
 
     private IntPtr _oldWndProc;
     private WndProcDelegate? _wndProcDelegate;
+
+    public void BringToFront()
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+        ShowWindow(hwnd, SW_SHOW);
+        var presenter = AppWindow.Presenter as OverlappedPresenter;
+        presenter?.Restore();
+        this.Activate();
+        SetForegroundWindow(hwnd);
+    }
 
     public MainWindow()
     {
