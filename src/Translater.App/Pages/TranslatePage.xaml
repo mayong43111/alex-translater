@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Translater_App.Pages.TranslatePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="24,16,24,16" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Language selector -->
+        <Grid Grid.Row="0" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ComboBox
+                x:Name="SourceLanguageCombo"
+                Grid.Column="0"
+                HorizontalAlignment="Stretch"
+                SelectedIndex="0">
+                <ComboBoxItem Content="自动检测" Tag="auto" />
+                <ComboBoxItem Content="中文" Tag="zh" />
+                <ComboBoxItem Content="English" Tag="en" />
+            </ComboBox>
+            <Button
+                x:Name="SwapLanguageButton"
+                Grid.Column="1"
+                Click="SwapLanguage_Click"
+                ToolTipService.ToolTip="交换语言">
+                <FontIcon FontSize="16" Glyph="&#xE8AB;" />
+            </Button>
+            <ComboBox
+                x:Name="TargetLanguageCombo"
+                Grid.Column="2"
+                HorizontalAlignment="Stretch"
+                SelectedIndex="1">
+                <ComboBoxItem Content="中文" Tag="zh" />
+                <ComboBoxItem Content="English" Tag="en" />
+            </ComboBox>
+        </Grid>
+
+        <!-- Input area -->
+        <TextBox
+            x:Name="InputTextBox"
+            Grid.Row="2"
+            AcceptsReturn="True"
+            PlaceholderText="输入或粘贴文本..."
+            TextWrapping="Wrap" />
+
+        <!-- Action buttons -->
+        <StackPanel
+            Grid.Row="3"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button Click="PasteFromClipboard_Click" ToolTipService.ToolTip="粘贴">
+                <FontIcon FontSize="14" Glyph="&#xE77F;" />
+            </Button>
+            <Button
+                x:Name="TranslateButton"
+                Click="Translate_Click"
+                Style="{StaticResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="14" Glyph="&#xE8C1;" />
+                    <TextBlock Text="翻译" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <!-- Result area -->
+        <Grid Grid.Row="4" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBox
+                x:Name="ResultTextBox"
+                Grid.Row="0"
+                IsReadOnly="True"
+                PlaceholderText="翻译结果"
+                TextWrapping="Wrap" />
+            <StackPanel
+                Grid.Row="1"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal"
+                Spacing="8">
+                <Button Click="CopyResult_Click" ToolTipService.ToolTip="复制结果">
+                    <FontIcon FontSize="14" Glyph="&#xE8C8;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Page>
