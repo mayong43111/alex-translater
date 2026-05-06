@@ -373,25 +373,17 @@ var item = await picker.PickSingleItemAsync();
 
 ### Phase 3 - OCR 截屏翻译
 
-1. ~~从 STranslate 移植 OCR 引擎对接代码~~ ✅ PaddleOCR PP-OCRv5
-2. ~~参考 STranslate 截屏逻辑，用 Win32 窗口实现截屏遮罩~~ ✅
-3. ~~OCR → 自动翻译流程串联~~ ✅
-4. ~~移植热键管理代码，注册全局快捷键~~ ✅ Alt+D
+1. 从 STranslate 移植 OCR 引擎对接代码
+2. 参考 STranslate 截屏逻辑，用 Win32 窗口实现截屏遮罩
+3. OCR → 自动翻译流程串联
+4. 移植热键管理代码，注册全局快捷键
 
 ### Phase 4 - 完善
 
-1. ~~历史记录存储 + 列表展示~~ ✅ JSON 持久化 + 历史对话框
-2. ~~设置页面（翻译源配置、**快捷键自定义**、主题）~~ ✅ ContentDialog
-3. ~~系统托盘图标（最小化到托盘）~~ ✅ Win32 Shell_NotifyIcon
-4. ~~打包发布 MSIX~~ ✅ self-contained publish 脚本
-
-### Phase 5 - UI 美化
-
-1. 卡片式布局（输入区/结果区使用圆角卡片容器，阴影/边框）
-2. 语言栏胶囊设计（Pill 形状的语言切换条）
-3. 动画效果（翻译按钮 loading、结果淡入、按钮 hover 缩放）
-4. 字体与间距优化（行高、Padding、一致性）
-5. 状态栏/底栏（显示翻译源、字符数、快捷键提示）
+1. 历史记录存储 + 列表展示
+2. 设置页面（翻译源配置、**快捷键自定义**、主题）
+3. 系统托盘图标（最小化到托盘）
+4. 打包发布 MSIX
 
 ---
 
