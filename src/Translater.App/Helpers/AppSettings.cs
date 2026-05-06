@@ -9,6 +9,12 @@ public enum AppTheme
     Dark = 2
 }
 
+public enum TranslationEngine
+{
+    Bing = 0,
+    Offline = 1
+}
+
 public class AppSettings
 {
     private static readonly string SettingsDir = Path.Combine(
@@ -19,6 +25,11 @@ public class AppSettings
     public uint HotkeyModifiers { get; set; } = HotKeyManager.MOD_ALT;
     public uint HotkeyKey { get; set; } = 0x44; // VK_D
     public AppTheme Theme { get; set; } = AppTheme.System;
+    public TranslationEngine Engine { get; set; } = TranslationEngine.Bing;
+
+    public static string GetModelsDir() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Translater", "models");
 
     public static AppSettings Load()
     {

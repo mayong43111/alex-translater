@@ -20,6 +20,10 @@ public class ScreenOverlay
     [DllImport("user32.dll")]
     private static extern bool UpdateWindow(IntPtr hWnd);
     [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetFocus(IntPtr hWnd);
+    [DllImport("user32.dll")]
     private static extern IntPtr GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
     [DllImport("user32.dll")]
     private static extern bool TranslateMessage(ref MSG lpMsg);
@@ -159,6 +163,8 @@ public class ScreenOverlay
 
             ShowWindow(_hwnd, SW_SHOW);
             UpdateWindow(_hwnd);
+            SetForegroundWindow(_hwnd);
+            SetFocus(_hwnd);
 
             // Message loop
             while (GetMessage(out var msg, IntPtr.Zero, 0, 0) != IntPtr.Zero)

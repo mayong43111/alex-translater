@@ -1,35 +1,45 @@
 ﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Translater_App;
 
-/// <summary>
-/// Provides application-specific behavior to supplement the default Application class.
-/// </summary>
 public partial class App : Application
 {
     private Window? _window;
-    
-    /// <summary>
-    /// Initializes the singleton application object.  This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
+    private static readonly string CrashLogPath = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Translater", "crash.log");
+
     public App()
     {
         InitializeComponent();
+        UnhandledException += App_UnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            LogCrash("AppDomain", e.ExceptionObject as Exception);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            LogCrash("TaskScheduler", e.Exception);
+            e.SetObserved();
+        };
     }
 
-    /// <summary>
-    /// Invoked when the application is launched.
-    /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
+    private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        LogCrash("WinUI", e.Exception);
+        e.Handled = true;
+    }
+
+    private static void LogCrash(string source, Exception? ex)
+    {
+        try
+        {
+            var dir = System.IO.Path.GetDirectoryName(CrashLogPath)!;
+            System.IO.Directory.CreateDirectory(dir);
+            var msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}] {ex}\n\n";
+            System.IO.File.AppendAllText(CrashLogPath, msg);
+        }
+        catch { }
+    }
+
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         _window = new MainWindow();

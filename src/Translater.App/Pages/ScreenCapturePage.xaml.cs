@@ -10,7 +10,7 @@ public sealed partial class ScreenCapturePage : Page
         InitializeComponent();
     }
 
-    private async void Capture_Click(object sender, RoutedEventArgs e)
+    private void Capture_Click(object sender, RoutedEventArgs e)
     {
         CaptureButton.IsEnabled = false;
         try

@@ -13,47 +13,37 @@
     </Window.SystemBackdrop>
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition x:Name="SidePanelColumn" Width="0" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: Main translator area -->
+        <Grid Grid.Column="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Compact title bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Padding="12,0">
+        <!-- Title bar -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Padding="12,0,140,0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <Image
+                Width="16"
+                Height="16"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                Source="Assets/TranslateLogo.png" />
             <TextBlock
+                Grid.Column="1"
                 VerticalAlignment="Center"
                 FontSize="12"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Text="Translater" />
-            <Button
-                Grid.Column="1"
-                Width="28"
-                Height="28"
-                Padding="0"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderBrush="Transparent"
-                Click="History_Click"
-                ToolTipService.ToolTip="历史记录">
-                <SymbolIcon Symbol="Clock" />
-            </Button>
-            <Button
-                Grid.Column="2"
-                Width="28"
-                Height="28"
-                Padding="0"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderBrush="Transparent"
-                Click="Settings_Click"
-                ToolTipService.ToolTip="设置">
-                <SymbolIcon Symbol="Setting" />
-            </Button>
         </Grid>
 
         <!-- Main content - compact translator -->
@@ -128,33 +118,18 @@
                     FontSize="14"
                     PlaceholderText="输入文本..."
                     TextWrapping="Wrap" />
-                <!-- Translate button overlay bottom-right -->
-                <StackPanel
+                <Button
+                    x:Name="TranslateButton"
+                    Height="28"
                     Margin="0,0,6,6"
+                    Padding="10,0"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
-                    Orientation="Horizontal"
-                    Spacing="4">
-                    <Button
-                        Width="28"
-                        Height="28"
-                        Padding="0"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        Click="PasteFromClipboard_Click"
-                        ToolTipService.ToolTip="粘贴">
-                        <SymbolIcon Symbol="Paste" />
-                    </Button>
-                    <Button
-                        x:Name="TranslateButton"
-                        Height="28"
-                        Padding="10,0"
-                        Click="Translate_Click"
-                        CornerRadius="14"
-                        Style="{StaticResource AccentButtonStyle}">
-                        <TextBlock FontSize="12" Text="翻译" />
-                    </Button>
-                </StackPanel>
+                    Click="Translate_Click"
+                    CornerRadius="14"
+                    Style="{StaticResource AccentButtonStyle}">
+                    <TextBlock FontSize="12" Text="翻译" />
+                </Button>
             </Grid>
 
             <!-- Divider -->
@@ -186,5 +161,88 @@
                 </Button>
             </Grid>
         </Grid>
+
+        <!-- Status bar -->
+        <Grid Grid.Row="2" Padding="12,4,12,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                x:Name="StatusText"
+                VerticalAlignment="Center"
+                FontSize="11"
+                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                Text="就绪" />
+            <TextBlock
+                x:Name="HotkeyHintText"
+                Grid.Column="1"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                FontSize="11"
+                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                Text="Alt+D 截屏翻译" />
+            <Button
+                x:Name="HistoryButton"
+                Grid.Column="2"
+                Width="18"
+                Height="18"
+                MinWidth="0"
+                MinHeight="0"
+                Padding="0"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                Click="HistoryButton_Click"
+                ToolTipService.ToolTip="历史记录">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="11" Glyph="&#xE823;" />
+            </Button>
+            <Button
+                x:Name="SettingsButton"
+                Grid.Column="3"
+                Width="18"
+                Height="18"
+                MinWidth="0"
+                MinHeight="0"
+                Padding="0"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                Click="SettingsButton_Click"
+                ToolTipService.ToolTip="设置">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="11" Glyph="&#xE713;" />
+            </Button>
+        </Grid>
+        </Grid>
+
+        <!-- Right: Side panel -->
+        <Border Grid.Column="1" x:Name="SidePanel" Visibility="Collapsed"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0"
+                Background="{ThemeResource LayerFillColorDefaultBrush}">
+            <Grid Margin="0,32,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Side panel header -->
+                <Grid Padding="12,8">
+                    <TextBlock x:Name="SidePanelTitle" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button HorizontalAlignment="Right" Background="Transparent" BorderBrush="Transparent"
+                            Padding="4" MinWidth="0" MinHeight="0" Click="CloseSidePanel_Click">
+                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="11" Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
+
+                <!-- Side panel content -->
+                <ScrollViewer Grid.Row="1" Padding="12,0,12,12">
+                    <StackPanel x:Name="SidePanelContent" Spacing="8" />
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
