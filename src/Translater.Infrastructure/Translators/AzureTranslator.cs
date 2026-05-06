@@ -1,7 +1,8 @@
-using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Translater.Core.Interfaces;
 using Translater.Core.Models;
+using Translater.Infrastructure.Serialization;
 
 namespace Translater.Infrastructure.Translators;
 
@@ -36,8 +37,10 @@ public class AzureTranslator : ITranslationService
         request.Headers.Add("Ocp-Apim-Subscription-Key", _apiKey);
         request.Headers.Add("Ocp-Apim-Subscription-Region", _region);
 
-        var body = new[] { new { Text = text } };
-        request.Content = JsonContent.Create(body);
+        var body = JsonSerializer.Serialize(
+            new[] { new BingTextRequest { Text = text } },
+            InfrastructureJsonContext.Default.BingTextRequestArray);
+        request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
