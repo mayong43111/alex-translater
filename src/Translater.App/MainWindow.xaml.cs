@@ -78,6 +78,9 @@ public sealed partial class MainWindow : Window
             };
         }
 
+        // Update hotkey hint in status bar
+        HotkeyHintText.Text = $"{_settings.GetHotkeyDisplayString()} 截屏翻译";
+
         // Intercept close to minimize to tray
         AppWindow.Closing += AppWindow_Closing;
     }
@@ -246,6 +249,7 @@ public sealed partial class MainWindow : Window
 
         TranslateButton.IsEnabled = false;
         ResultTextBox.Text = "翻译中...";
+        StatusText.Text = "翻译中...";
         try
         {
             var sourceLang = GetSelectedLanguage(SourceLanguageCombo, "auto");
@@ -259,6 +263,7 @@ public sealed partial class MainWindow : Window
 
             var result = await _translator.TranslateAsync(inputText, sourceLang, targetLang);
             ResultTextBox.Text = result.TranslatedText;
+            StatusText.Text = $"{result.SourceName} · {inputText.Length} 字符";
 
             // Save to history
             await _historyService.SaveAsync(new HistoryItem
@@ -274,14 +279,17 @@ public sealed partial class MainWindow : Window
         catch (TaskCanceledException)
         {
             ResultTextBox.Text = "翻译超时，请检查网络";
+            StatusText.Text = "超时";
         }
         catch (HttpRequestException ex)
         {
             ResultTextBox.Text = $"网络错误: {ex.Message}";
+            StatusText.Text = "网络错误";
         }
         catch (Exception ex)
         {
             ResultTextBox.Text = $"翻译失败: {ex.Message}";
+            StatusText.Text = "失败";
         }
         finally
         {
@@ -528,6 +536,9 @@ public sealed partial class MainWindow : Window
             var hwnd = WindowNative.GetWindowHandle(this);
             _hotKeyManager?.Dispose();
             RegisterGlobalHotKey(hwnd);
+
+            // Update hotkey hint
+            HotkeyHintText.Text = $"{_settings.GetHotkeyDisplayString()} 截屏翻译";
         }
     }
 }
