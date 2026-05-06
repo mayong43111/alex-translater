@@ -1,5 +1,8 @@
 namespace Translater.Infrastructure.Translators.Offline;
 
+using System.Text.Json;
+using Translater.Infrastructure.Serialization;
+
 /// <summary>
 /// Downloads OPUS-MT ONNX models from HuggingFace.
 /// Models are stored at %LOCALAPPDATA%/Translater/models/
@@ -121,7 +124,7 @@ public sealed class ModelDownloader
         if (File.Exists(vocabJsonPath) && !File.Exists(vocabTxtPath))
         {
             var json = await File.ReadAllTextAsync(vocabJsonPath, ct);
-            var vocab = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+            var vocab = JsonSerializer.Deserialize(json, InfrastructureJsonContext.Default.DictionaryStringInt32);
             if (vocab != null)
             {
                 var sorted = new string[vocab.Count];

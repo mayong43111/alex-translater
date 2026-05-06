@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Translater.Core.Interfaces;
 using Translater.Core.Models;
+using Translater.Infrastructure.Serialization;
 
 namespace Translater.Infrastructure.Storage;
 
@@ -50,7 +51,7 @@ public class JsonHistoryStore : IHistoryService
         if (File.Exists(_filePath))
         {
             var json = File.ReadAllText(_filePath);
-            _items = JsonSerializer.Deserialize<List<HistoryItem>>(json) ?? [];
+            _items = JsonSerializer.Deserialize(json, InfrastructureJsonContext.Default.ListHistoryItem) ?? [];
         }
     }
 
@@ -58,7 +59,7 @@ public class JsonHistoryStore : IHistoryService
     {
         var dir = Path.GetDirectoryName(_filePath)!;
         Directory.CreateDirectory(dir);
-        var json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(_items, InfrastructureJsonContext.Default.ListHistoryItem);
         await File.WriteAllTextAsync(_filePath, json);
     }
 }

@@ -7,7 +7,7 @@ public partial class App : Application
     private Window? _window;
     private static readonly string CrashLogPath = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Translater", "crash.log");
+        "AlexTranslater", "crash.log");
 
     public App()
     {

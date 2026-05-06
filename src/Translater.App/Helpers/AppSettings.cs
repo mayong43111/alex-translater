@@ -19,7 +19,7 @@ public class AppSettings
 {
     private static readonly string SettingsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Translater");
+        "AlexTranslater");
     private static readonly string SettingsFile = Path.Combine(SettingsDir, "settings.json");
 
     public uint HotkeyModifiers { get; set; } = HotKeyManager.MOD_ALT;
@@ -29,7 +29,7 @@ public class AppSettings
 
     public static string GetModelsDir() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Translater", "models");
+        "AlexTranslater", "models");
 
     public static AppSettings Load()
     {
@@ -38,7 +38,7 @@ public class AppSettings
             if (File.Exists(SettingsFile))
             {
                 var json = File.ReadAllText(SettingsFile);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                return JsonSerializer.Deserialize(json, AppJsonContext.Default.AppSettings) ?? new AppSettings();
             }
         }
         catch { }
@@ -50,7 +50,7 @@ public class AppSettings
         try
         {
             Directory.CreateDirectory(SettingsDir);
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(this, AppJsonContext.Default.AppSettings);
             File.WriteAllText(SettingsFile, json);
         }
         catch { }

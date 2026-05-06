@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Translater.Core.Interfaces;
 using Translater.Core.Models;
+using Translater.Infrastructure.Serialization;
 
 namespace Translater.Infrastructure.Translators;
 
@@ -39,7 +40,9 @@ public class BingFreeTranslator : ITranslationService
         if (sourceLang != "auto-detect")
             url += $"&from={sourceLang}";
 
-        var body = JsonSerializer.Serialize(new[] { new { Text = text } });
+        var body = JsonSerializer.Serialize(
+            new[] { new BingTextRequest { Text = text } },
+            InfrastructureJsonContext.Default.BingTextRequestArray);
         var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")

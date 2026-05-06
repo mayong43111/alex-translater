@@ -69,7 +69,7 @@ public sealed partial class MainWindow : Window
         _ocrService = new PaddleOcrEngine();
 
         var storageDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Translater");
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlexTranslater");
         _historyService = new JsonHistoryStore(storageDir);
 
         // Register hotkey and tray icon
@@ -103,6 +103,8 @@ public sealed partial class MainWindow : Window
         // Resolve icon path relative to exe
         var exeDir = AppContext.BaseDirectory;
         var iconPath = Path.Combine(exeDir, "Assets", "AppIcon.ico");
+        if (!File.Exists(iconPath))
+            iconPath = Path.Combine(exeDir, "AppIcon.ico");
 
         _trayIcon.OnShowWindow = () =>
         {
@@ -123,7 +125,7 @@ public sealed partial class MainWindow : Window
             this.Close();
         };
 
-        _trayIcon.Create(hwnd, iconPath, "Translater - 中英翻译");
+        _trayIcon.Create(hwnd, iconPath, "AlexTranslater - 中英翻译");
     }
 
     private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
