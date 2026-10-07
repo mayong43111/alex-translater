@@ -28,6 +28,81 @@ public sealed partial class MainWindow : Window
     private TrayIconManager? _trayIcon;
     private AppSettings _settings;
     private bool _forceClose;
+    private Windows.Media.Playback.MediaPlayer? _speechPlayer;
+    private Windows.Media.SpeechSynthesis.SpeechSynthesisStream? _speechStream;
+    private Button? _speakingButton;
+    private int _speechRequest;
+
+    private void StopSpeech()
+    {
+        _speechRequest++;
+        _speechPlayer?.Dispose();
+        _speechPlayer = null;
+        _speechStream?.Dispose();
+        _speechStream = null;
+        if (_speakingButton != null)
+        {
+            ((SymbolIcon)_speakingButton.Content).Symbol = Symbol.Volume;
+            var label = _speakingButton == SpeakInputButton ? "朗读原文" : "朗读译文";
+            ToolTipService.SetToolTip(_speakingButton, label);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_speakingButton, label);
+        }
+        _speakingButton = null;
+    }
+
+    private async void Speak_Click(object sender, RoutedEventArgs e)
+    {
+        var button = (Button)sender;
+        var wasSpeaking = _speakingButton == button;
+        StopSpeech();
+        if (wasSpeaking) return;
+        var text = (button == SpeakInputButton ? InputTextBox.Text : ResultTextBox.Text).Trim();
+        if (string.IsNullOrWhiteSpace(text)) return;
+        var request = _speechRequest;
+        try
+        {
+            using var synthesizer = new Windows.Media.SpeechSynthesis.SpeechSynthesizer();
+            var language = LanguageDetector.Detect(text);
+            var voice = Windows.Media.SpeechSynthesis.SpeechSynthesizer.AllVoices
+                .FirstOrDefault(candidate => candidate.Language.StartsWith(language, StringComparison.OrdinalIgnoreCase));
+            if (voice == null)
+            {
+                StatusText.Text = $"请在 Windows 设置中安装 {language} 语音包";
+                return;
+            }
+            synthesizer.Voice = voice;
+            _speakingButton = button;
+            ((SymbolIcon)button.Content).Symbol = Symbol.Stop;
+            ToolTipService.SetToolTip(button, "停止朗读");
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, "停止朗读");
+            var stream = await synthesizer.SynthesizeTextToStreamAsync(text);
+            if (request != _speechRequest)
+            {
+                stream.Dispose();
+                return;
+            }
+            _speechStream = stream;
+            _speechPlayer = new Windows.Media.Playback.MediaPlayer();
+            _speechPlayer.MediaEnded += (_, _) => DispatcherQueue.TryEnqueue(() =>
+            {
+                if (request == _speechRequest) StopSpeech();
+            });
+            _speechPlayer.MediaFailed += (_, _) => DispatcherQueue.TryEnqueue(() =>
+            {
+                if (request != _speechRequest) return;
+                StopSpeech();
+                StatusText.Text = "语音播放失败，请检查音频设备";
+            });
+            _speechPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStream(stream, stream.ContentType);
+            _speechPlayer.Play();
+        }
+        catch (Exception ex)
+        {
+            if (request != _speechRequest) return;
+            StopSpeech();
+            StatusText.Text = $"朗读失败: {ex.Message}";
+        }
+    }
 
     // Settings fields
     private CheckBox? _settingsModCtrl, _settingsModAlt, _settingsModShift;
@@ -106,6 +181,7 @@ public sealed partial class MainWindow : Window
 
         // Intercept close to minimize to tray
         AppWindow.Closing += AppWindow_Closing;
+        Closed += (_, _) => StopSpeech();
     }
 
     private void SetupTrayIcon(IntPtr hwnd)

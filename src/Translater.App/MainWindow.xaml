@@ -115,9 +115,16 @@
                 <TextBox
                     x:Name="InputTextBox"
                     AcceptsReturn="True"
+                    Padding="8,8,8,40"
                     FontSize="14"
                     PlaceholderText="输入文本..."
                     TextWrapping="Wrap" />
+                <Button x:Name="SpeakInputButton" Width="28" Height="28" MinWidth="0" MinHeight="0"
+                        Margin="6,0,0,6" Padding="0" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Background="Transparent" BorderBrush="Transparent" Click="Speak_Click"
+                        AutomationProperties.Name="朗读原文" ToolTipService.ToolTip="朗读原文">
+                    <SymbolIcon Symbol="Volume" />
+                </Button>
                 <Button
                     x:Name="TranslateButton"
                     Height="28"
@@ -142,10 +149,17 @@
             <Grid Grid.Row="3">
                 <TextBox
                     x:Name="ResultTextBox"
+                    Padding="8,8,8,40"
                     FontSize="14"
                     IsReadOnly="True"
                     PlaceholderText="翻译结果"
                     TextWrapping="Wrap" />
+                <Button x:Name="SpeakResultButton" Width="28" Height="28" MinWidth="0" MinHeight="0"
+                        Margin="6,0,0,6" Padding="0" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Background="Transparent" BorderBrush="Transparent" Click="Speak_Click"
+                        AutomationProperties.Name="朗读译文" ToolTipService.ToolTip="朗读译文">
+                    <SymbolIcon Symbol="Volume" />
+                </Button>
                 <Button
                     Width="28"
                     Height="28"

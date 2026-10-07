@@ -1,24 +1,19 @@
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Translater.Core.Interfaces;
 using Translater.Core.Models;
-using Translater.Infrastructure.Serialization;
 
 namespace Translater.Infrastructure.Translators;
 
 /// <summary>
-/// Bing Translator free implementation using Edge translate API.
+/// Bing Translator implementation using its web translation session.
 /// No API key required.
 /// </summary>
 public class BingFreeTranslator : ITranslationService
 {
     private readonly HttpClient _httpClient;
-    private string? _authToken;
-    private DateTime _tokenExpiry = DateTime.MinValue;
-
-    private const string AuthUrl = "https://edge.microsoft.com/translate/auth";
-    private const string TranslateUrl = "https://api-edge.cognitive.microsofttranslator.com/translate";
+    private const string TranslatorPage = "https://cn.bing.com/translator";
+    private const string TranslateUrl = "https://cn.bing.com/ttranslatev3";
 
     public BingFreeTranslator(HttpClient httpClient)
     {
@@ -31,34 +26,47 @@ public class BingFreeTranslator : ITranslationService
         string targetLanguage,
         CancellationToken ct = default)
     {
-        var token = await GetAuthTokenAsync(ct);
-
         var sourceLang = MapLanguageCode(sourceLanguage);
         var targetLang = MapLanguageCode(targetLanguage);
+        if (text.Length > 1000)
+            throw new InvalidOperationException("Bing 网页翻译单次最多支持 1000 个字符，请分段翻译。");
 
-        var url = $"{TranslateUrl}?api-version=3.0&to={targetLang}";
-        if (sourceLang != "auto-detect")
-            url += $"&from={sourceLang}";
+        using var pageRequest = new HttpRequestMessage(HttpMethod.Get, TranslatorPage);
+        using var pageResponse = await _httpClient.SendAsync(pageRequest, ct);
+        pageResponse.EnsureSuccessStatusCode();
+        var html = await pageResponse.Content.ReadAsStringAsync(ct);
+        var session = Regex.Match(html, "IG:\"([^\"]+)\"", RegexOptions.None, TimeSpan.FromSeconds(1));
+        var parameters = Regex.Match(html, @"params_AbusePreventionHelper\s*=\s*(\[[^\]]+\])", RegexOptions.None, TimeSpan.FromSeconds(1));
+        if (!session.Success || !parameters.Success)
+            throw new InvalidOperationException("无法获取 Bing 翻译会话，网页接口可能已变更或需要验证。请稍后重试或使用离线翻译。");
 
-        var body = JsonSerializer.Serialize(
-            new[] { new BingTextRequest { Text = text } },
-            InfrastructureJsonContext.Default.BingTextRequestArray);
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        using var sessionData = JsonDocument.Parse(parameters.Groups[1].Value);
+        var key = sessionData.RootElement[0].ToString();
+        var token = sessionData.RootElement[1].GetString() ?? string.Empty;
+        var url = $"{TranslateUrl}?isVertical=1&IG={Uri.EscapeDataString(session.Groups[1].Value)}&IID=translator.5028.1";
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = new StringContent(body, Encoding.UTF8, "application/json")
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["fromLang"] = sourceLang,
+                ["to"] = targetLang,
+                ["text"] = text,
+                ["token"] = token,
+                ["key"] = key
+            })
         };
-        request.Headers.Add("Authorization", $"Bearer {token}");
-        request.Headers.Add("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-
-        var response = await _httpClient.SendAsync(request, ct);
+        using var response = await _httpClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(json))
+            throw new InvalidOperationException("Bing 未返回译文，请稍后重试或使用离线翻译。");
         using var doc = JsonDocument.Parse(json);
-
+        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+            throw new InvalidOperationException("Bing 翻译请求被拒绝或受到限流，请稍后重试。");
         var result = doc.RootElement[0];
-        var translations = result.GetProperty("translations");
+        if (!result.TryGetProperty("translations", out var translations) || translations.GetArrayLength() == 0)
+            throw new InvalidOperationException("Bing 响应中没有译文，请稍后重试。");
         var translatedText = translations[0].GetProperty("text").GetString() ?? "";
 
         var detectedLang = sourceLanguage;
@@ -68,25 +76,6 @@ public class BingFreeTranslator : ITranslationService
         }
 
         return new TranslationResult(text, translatedText, detectedLang, "Bing");
-    }
-
-    private async Task<string> GetAuthTokenAsync(CancellationToken ct)
-    {
-        if (_authToken != null && DateTime.UtcNow < _tokenExpiry)
-            return _authToken;
-
-        var request = new HttpRequestMessage(HttpMethod.Get, AuthUrl);
-        request.Headers.Add("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-
-        var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
-
-        _authToken = await response.Content.ReadAsStringAsync(ct);
-        // Token is valid for ~10 minutes, refresh at 8 min
-        _tokenExpiry = DateTime.UtcNow.AddMinutes(8);
-
-        return _authToken;
     }
 
     private static string MapLanguageCode(string lang) => lang switch
